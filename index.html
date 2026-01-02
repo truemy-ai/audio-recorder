@@ -7,19 +7,19 @@
     <style>
         :root { --bg: #FFFBEB; --primary: #FBBF24; --secondary: #3B82F6; --danger: #EF4444; --text: #1F2937; }
         body { font-family: 'Arial Black', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .container { width: 95%; max-width: 500px; height: 92vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; background: white; border-radius: 40px; border: 6px solid var(--text); box-shadow: 0 20px 0px #D1D5DB; }
-        h1 { font-size: 26px; color: var(--text); margin: 0 0 15px; text-align: center; background: var(--primary); padding: 8px; border-radius: 15px; border: 4px solid var(--text); }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 20px; padding: 20px 5px; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--text); transition: 0.1s; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 95%; max-width: 500px; height: 95%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: white; border-radius: 40px; border: 5px solid var(--text); box-shadow: 0 15px 0px #D1D5DB; }
+        h1 { font-size: 26px; color: var(--text); margin: 0 0 15px; text-align: center; background: var(--primary); padding: 10px; border-radius: 15px; border: 3px solid var(--text); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 20px; padding: 15px 5px; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--text); transition: 0.1s; text-align: center; }
         .mode-btn.active { background: var(--secondary); color: white; transform: translateY(4px); box-shadow: 0 2px 0 var(--text); }
-        .mode-btn span { font-size: 14px; font-weight: normal; margin-top: 5px; }
+        .mode-btn span { font-size: 13px; display: block; font-weight: normal; margin-top: 3px; }
         .timer-box { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         #clock { font-size: 120px; font-weight: 900; color: var(--text); font-family: 'Arial', sans-serif; letter-spacing: -2px; }
         .action-area { padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
-        #recordBtn { width: 180px; height: 180px; border-radius: 50%; border: 8px solid var(--text); background: var(--danger); color: white; font-size: 32px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 0 #991B1B; transition: 0.2s; }
+        #recordBtn { width: 170px; height: 170px; border-radius: 50%; border: 8px solid var(--text); background: var(--danger); color: white; font-size: 32px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 0 #991B1B; }
         #recordBtn:disabled { background: #D1D5DB; box-shadow: 0 6px 0 #9CA3AF; opacity: 0.6; cursor: not-allowed; }
-        #recordBtn.recording { animation: pulse 1s infinite; background: #FF0000; border-color: #fff; box-shadow: none; transform: scale(1.05); }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        #recordBtn.recording { animation: pulse 1s infinite; background: #FF0000; box-shadow: none; border-color: #fff; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         #status { margin-top: 15px; font-size: 18px; color: var(--secondary); font-weight: bold; height: 25px; }
     </style>
 </head>
@@ -35,12 +35,12 @@
         <div class="timer-box"><div id="clock">00:00</div></div>
         <div class="action-area">
             <button id="recordBtn" onclick="run()" disabled>START</button>
-            <div id="status">請先選取上方測驗項目</div>
+            <div id="status">請選取測驗項目</div>
         </div>
     </div>
 
-    <audio id="audio_s" src="single.mp3" preload="auto"></audio>
-    <audio id="audio_d" src="double.mp3" preload="auto"></audio>
+    <audio id="audio_s" preload="auto"><source src="single.mp3" type="audio/mpeg"></audio>
+    <audio id="audio_d" preload="auto"><source src="double.mp3" type="audio/mpeg"></audio>
 
     <script>
         let recorder, chunks = [], limit = 0, timer, cat = "";
@@ -48,11 +48,9 @@
         const d_file = document.getElementById('audio_d');
 
         function prep(s, btn, name) {
-            // 強制喚醒：點擊黃色按鈕時，立刻靜音播放一次以獲取權限
-            s_file.muted = true;
-            s_file.play().then(() => { s_file.pause(); s_file.muted = false; });
-            d_file.muted = true;
-            d_file.play().then(() => { d_file.pause(); d_file.muted = false; });
+            // 強力喚醒機制：解除 iOS/Android 的靜音鎖定
+            s_file.play().then(() => { s_file.pause(); s_file.currentTime = 28; }).catch(e => console.log(e));
+            d_file.play().then(() => { d_file.pause(); d_file.currentTime = 87; }).catch(e => console.log(e));
 
             limit = s; cat = name;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -63,12 +61,13 @@
         }
 
         function playTng(type) {
+            // 直接控制播放
             if (type === 'single') {
-                s_file.currentTime = 28.5; // 指向 30s 檔末尾
-                s_file.play().catch(e => console.log("播放失敗", e));
+                s_file.currentTime = 29.0; // 定位到 30 秒檔的最後 TNG 處
+                s_file.play();
             } else {
-                d_file.currentTime = 87.5; // 指向 90s 檔末尾
-                d_file.play().catch(e => console.log("播放失敗", e));
+                d_file.currentTime = 88.0; // 定位到 90 秒檔的最後 TNG TNG 處
+                d_file.play();
             }
         }
 
@@ -79,9 +78,6 @@
 
         async function run() {
             try {
-                // 再次嘗試喚醒音訊環境
-                s_file.load(); d_file.load();
-                
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 recorder = new MediaRecorder(stream);
                 chunks = [];
@@ -104,6 +100,7 @@
                 timer = setInterval(() => {
                     passed++; left--; draw(left);
                     
+                    // 根據需求精準觸發
                     if (limit === 30 && passed === 20) playTng('single');
                     if (limit === 60 && passed === 50) playTng('single');
                     if (limit === 90 && passed === 70) playTng('double');
