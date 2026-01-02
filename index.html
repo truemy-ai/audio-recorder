@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>口語測驗練習模擬錄音</title>
+    <title>口語測驗模擬錄音系統</title>
     <style>
         :root { --bg: #FFFBEB; --primary: #FBBF24; --secondary: #3B82F6; --danger: #EF4444; --text: #1F2937; }
         body { font-family: 'Arial Black', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         .container { width: 95%; max-width: 500px; height: 92vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; background: white; border-radius: 40px; border: 6px solid var(--text); box-shadow: 0 20px 0px #D1D5DB; }
-        h1 { font-size: 26px; color: var(--text); margin: 0 0 15px; text-align: center; background: var(--primary); padding: 8px; border-radius: 15px; border: 3px solid var(--text); }
+        h1 { font-size: 26px; color: var(--text); margin: 0 0 15px; text-align: center; background: var(--primary); padding: 8px; border-radius: 15px; border: 4px solid var(--text); }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 20px; padding: 20px 5px; font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--text); transition: 0.1s; }
+        .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 20px; padding: 20px 5px; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--text); transition: 0.1s; display: flex; flex-direction: column; align-items: center; }
         .mode-btn.active { background: var(--secondary); color: white; transform: translateY(4px); box-shadow: 0 2px 0 var(--text); }
-        .mode-btn span { font-size: 13px; display: block; font-weight: normal; margin-top: 3px; }
+        .mode-btn span { font-size: 14px; font-weight: normal; margin-top: 5px; }
         .timer-box { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        #clock { font-size: 110px; font-weight: 900; color: var(--text); font-family: 'Arial', sans-serif; }
+        #clock { font-size: 120px; font-weight: 900; color: var(--text); font-family: 'Arial', sans-serif; letter-spacing: -2px; }
         .action-area { padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
-        #recordBtn { width: 170px; height: 170px; border-radius: 50%; border: 6px solid var(--text); background: var(--danger); color: white; font-size: 28px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 0 #991B1B; }
+        #recordBtn { width: 180px; height: 180px; border-radius: 50%; border: 8px solid var(--text); background: var(--danger); color: white; font-size: 32px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 0 #991B1B; transition: 0.2s; }
         #recordBtn:disabled { background: #D1D5DB; box-shadow: 0 6px 0 #9CA3AF; opacity: 0.6; cursor: not-allowed; }
-        #recordBtn.recording { animation: pulse 1s infinite; background: #FF0000; box-shadow: none; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        #recordBtn.recording { animation: pulse 1s infinite; background: #FF0000; border-color: #fff; box-shadow: none; transform: scale(1.05); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         #status { margin-top: 15px; font-size: 18px; color: var(--secondary); font-weight: bold; height: 25px; }
     </style>
 </head>
@@ -34,8 +34,8 @@
         </div>
         <div class="timer-box"><div id="clock">00:00</div></div>
         <div class="action-area">
-            <button id="recordBtn" onclick="run()" disabled>開始錄音</button>
-            <div id="status">請先選取測驗項目</div>
+            <button id="recordBtn" onclick="run()" disabled>START</button>
+            <div id="status">請先選取上方測驗項目</div>
         </div>
     </div>
 
@@ -48,9 +48,11 @@
         const d_file = document.getElementById('audio_d');
 
         function prep(s, btn, name) {
-            // 點擊項目時「無聲播放」解鎖手機權限
-            s_file.play().then(() => { s_file.pause(); });
-            d_file.play().then(() => { d_file.pause(); });
+            // 強制喚醒：點擊黃色按鈕時，立刻靜音播放一次以獲取權限
+            s_file.muted = true;
+            s_file.play().then(() => { s_file.pause(); s_file.muted = false; });
+            d_file.muted = true;
+            d_file.play().then(() => { d_file.pause(); d_file.muted = false; });
 
             limit = s; cat = name;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -60,16 +62,13 @@
             draw(s);
         }
 
-        // 精準播放原音檔末尾的 TNG
         function playTng(type) {
             if (type === 'single') {
-                s_file.currentTime = 28.5; // 指向 30s 檔的末尾 TNG
-                s_file.play();
-                setTimeout(() => { s_file.pause(); }, 2000);
+                s_file.currentTime = 28.5; // 指向 30s 檔末尾
+                s_file.play().catch(e => console.log("播放失敗", e));
             } else {
-                d_file.currentTime = 87.5; // 指向 90s 檔的末尾 TNG TNG
-                d_file.play();
-                setTimeout(() => { d_file.pause(); }, 3000);
+                d_file.currentTime = 87.5; // 指向 90s 檔末尾
+                d_file.play().catch(e => console.log("播放失敗", e));
             }
         }
 
@@ -80,6 +79,9 @@
 
         async function run() {
             try {
+                // 再次嘗試喚醒音訊環境
+                s_file.load(); d_file.load();
+                
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 recorder = new MediaRecorder(stream);
                 chunks = [];
@@ -89,7 +91,6 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     const now = new Date();
-                    // 檔名分類：[項目]_時間
                     a.download = `[${cat}]_${now.getHours()}${now.getMinutes()}.wav`;
                     a.href = url; a.click();
                 };
@@ -103,7 +104,6 @@
                 timer = setInterval(() => {
                     passed++; left--; draw(left);
                     
-                    // 在指定的時間點播放剛上傳的原音
                     if (limit === 30 && passed === 20) playTng('single');
                     if (limit === 60 && passed === 50) playTng('single');
                     if (limit === 90 && passed === 70) playTng('double');
