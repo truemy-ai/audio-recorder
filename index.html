@@ -3,42 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>口語測驗練習系統</title>
+    <title>口語測驗練習模擬錄音</title>
     <style>
         :root { --bg: #FFFBEB; --primary: #FBBF24; --secondary: #3B82F6; --danger: #EF4444; --text: #1F2937; }
         body { font-family: 'Arial Black', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .container { width: 95%; max-width: 500px; height: 90vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; background: white; border-radius: 40px; border: 6px solid var(--text); box-shadow: 0 15px 0px #D1D5DB; }
-        h1 { font-size: 26px; color: var(--text); margin: 0 0 15px; text-align: center; background: var(--primary); padding: 5px; border-radius: 10px; }
+        .container { width: 95%; max-width: 500px; height: 92vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; background: white; border-radius: 40px; border: 6px solid var(--text); box-shadow: 0 20px 0px #D1D5DB; }
+        h1 { font-size: 26px; color: var(--text); margin: 0 0 15px; text-align: center; background: var(--primary); padding: 8px; border-radius: 15px; border: 3px solid var(--text); }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 20px; padding: 15px 5px; font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--text); transition: 0.1s; }
+        .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 20px; padding: 20px 5px; font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--text); transition: 0.1s; }
         .mode-btn.active { background: var(--secondary); color: white; transform: translateY(4px); box-shadow: 0 2px 0 var(--text); }
         .mode-btn span { font-size: 13px; display: block; font-weight: normal; margin-top: 3px; }
         .timer-box { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         #clock { font-size: 110px; font-weight: 900; color: var(--text); font-family: 'Arial', sans-serif; }
         .action-area { padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
-        #recordBtn { width: 160px; height: 160px; border-radius: 50%; border: 8px solid var(--text); background: var(--danger); color: white; font-size: 30px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 0 #991B1B; }
+        #recordBtn { width: 170px; height: 170px; border-radius: 50%; border: 6px solid var(--text); background: var(--danger); color: white; font-size: 28px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 0 #991B1B; }
         #recordBtn:disabled { background: #D1D5DB; box-shadow: 0 6px 0 #9CA3AF; opacity: 0.6; cursor: not-allowed; }
         #recordBtn.recording { animation: pulse 1s infinite; background: #FF0000; box-shadow: none; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         #status { margin-top: 15px; font-size: 18px; color: var(--secondary); font-weight: bold; height: 25px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>口語練習模擬錄音 🎤</h1>
+        <h1>測驗模擬錄音 🎤</h1>
         <div class="grid">
             <button class="mode-btn" onclick="prep(30, this, '情境對話')">情境對話<span>30s</span></button>
-            <button class="mode-btn" onclick="ready60(60, this, '看圖講話')">看圖講話<span>60s</span></button>
-            <button class="mode-btn" onclick="ready90(90, this, '文章朗讀')">文章朗讀<span>90s</span></button>
-            <button class="mode-btn" onclick="ready120(120, this, '口語表達')">口語表達<span>120s</span></button>
+            <button class="mode-btn" onclick="prep(60, this, '看圖講話')">看圖講話<span>60s</span></button>
+            <button class="mode-btn" onclick="prep(90, this, '文章朗讀')">文章朗讀<span>90s</span></button>
+            <button class="mode-btn" onclick="prep(120, this, '口語表達')">口語表達<span>120s</span></button>
         </div>
         <div class="timer-box"><div id="clock">00:00</div></div>
         <div class="action-area">
-            <button id="recordBtn" onclick="run()" disabled>START</button>
-            <div id="status">請先點選上方測驗項目</div>
+            <button id="recordBtn" onclick="run()" disabled>開始錄音</button>
+            <div id="status">請先選取測驗項目</div>
         </div>
     </div>
 
+    <audio id="audio_s" src="single.mp3" preload="auto"></audio>
+    <audio id="audio_d" src="double.mp3" preload="auto"></audio>
+
     <script>
-        // 直接內建擷取的標準原音 (Base64)
-        const snd1 = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTdvT18AZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHB
+        let recorder, chunks = [], limit = 0, timer, cat = "";
+        const s_file = document.getElementById('audio_s');
+        const d_file = document.getElementById('audio_d');
+
+        function prep(s, btn, name) {
+            // 點擊項目時「無聲播放」解鎖手機權限
+            s_file.play().then(() => { s_file.pause(); });
+            d_file.play().then(() => { d_file.pause(); });
+
+            limit = s; cat = name;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('recordBtn').disabled = false;
+            document.getElementById('status').innerText = "目標：" + name;
+            draw(s);
+        }
+
+        // 精準播放原音檔末尾的 TNG
+        function playTng(type) {
+            if (type === 'single') {
+                s_file.currentTime = 28.5; // 指向 30s 檔的末尾 TNG
+                s_file.play();
+                setTimeout(() => { s_file.pause(); }, 2000);
+            } else {
+                d_file.currentTime = 87.5; // 指向 90s 檔的末尾 TNG TNG
+                d_file.play();
+                setTimeout(() => { d_file.pause(); }, 3000);
+            }
+        }
+
+        function draw(s) {
+            let m = Math.floor(s/60), sec = s%60;
+            document.getElementById('clock').innerText = `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+        }
+
+        async function run() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recorder = new MediaRecorder(stream);
+                chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/wav' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const now = new Date();
+                    // 檔名分類：[項目]_時間
+                    a.download = `[${cat}]_${now.getHours()}${now.getMinutes()}.wav`;
+                    a.href = url; a.click();
+                };
+
+                recorder.start();
+                let left = limit, passed = 0;
+                const btn = document.getElementById('recordBtn');
+                btn.disabled = true; btn.classList.add('recording'); btn.innerText = "正在錄音";
+                document.getElementById('status').innerText = "🔴 請開始作答...";
+
+                timer = setInterval(() => {
+                    passed++; left--; draw(left);
+                    
+                    // 在指定的時間點播放剛上傳的原音
+                    if (limit === 30 && passed === 20) playTng('single');
+                    if (limit === 60 && passed === 50) playTng('single');
+                    if (limit === 90 && passed === 70) playTng('double');
+                    if (limit === 120 && passed === 100) playTng('double');
+
+                    if (left <= 0) {
+                        clearInterval(timer); recorder.stop();
+                        btn.disabled = false; btn.classList.remove('recording');
+                        btn.innerText = "完成";
+                        document.getElementById('status').innerText = "✅ 錄音已下載";
+                    }
+                }, 1000);
+            } catch (e) { alert("請授權麥克風權限！"); }
+        }
+    </script>
+</body>
+</html>
