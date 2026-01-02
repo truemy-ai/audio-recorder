@@ -5,35 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>口語測驗實作練習模擬錄音</title>
     <style>
-        body { font-family: 'Microsoft JhengHei', sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
-        .btn-group { margin: 20px 0; display: flex; justify-content: center; flex-wrap: wrap; }
-        button { padding: 12px 18px; margin: 8px; font-size: 16px; cursor: pointer; border-radius: 8px; border: 1px solid #007bff; background: white; color: #007bff; font-weight: bold; }
-        .time-btn.active { background: #007bff; color: white; }
-        #recordBtn { background: #e74c3c; color: white; width: 130px; height: 130px; border-radius: 50%; border: none; font-weight: bold; font-size: 20px; margin-top: 20px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        #recordBtn:disabled { background: #bdc3c7; cursor: not-allowed; box-shadow: none; }
-        #timer { font-size: 72px; color: #2c3e50; margin: 20px; font-weight: bold; font-family: monospace; }
-        #status { color: #7f8c8d; font-size: 18px; margin-top: 15px; }
+        :root { --primary: #007bff; --danger: #e74c3c; --bg: #f8f9fa; }
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #333; }
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
+        h2 { color: #2c3e50; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .time-btn { padding: 15px 10px; font-size: 16px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .time-btn.active { background: var(--primary); color: white; }
+        #timer { font-size: 80px; font-weight: 800; color: #34495e; margin: 20px 0; font-family: 'Courier New', monospace; letter-spacing: -2px; }
+        #recordBtn { width: 140px; height: 140px; border-radius: 50%; border: none; background: var(--danger); color: white; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.4s; box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3); position: relative; }
+        #recordBtn:hover { transform: scale(1.05); }
+        #recordBtn:disabled { background: #dcdde1; box-shadow: none; cursor: not-allowed; opacity: 0.7; }
+        #status { margin-top: 20px; color: #7f8c8d; font-size: 16px; min-height: 24px; font-weight: 500; }
+        .footer-note { margin-top: 30px; font-size: 13px; color: #bdc3c7; border-top: 1px solid #eee; padding-top: 15px; }
     </style>
 </head>
 <body>
-    <h2 style="color: #2c3e50;">口語測驗實作練習模擬錄音</h2>
-    <div class="btn-group">
-        <button class="time-btn" onclick="setTime(30, this)">情境對話(30s)</button>
-        <button class="time-btn" onclick="setTime(60, this)">看圖講話(1m)</button>
-        <button class="time-btn" onclick="setTime(90, this)">文章朗讀(1.5m)</button>
-        <button class="time-btn" onclick="setTime(120, this)">口語表達(2m)</button>
+    <div class="container">
+        <h2>口語測驗模擬錄音</h2>
+        
+        <div id="initOverlay">
+            <button class="time-btn" style="width:100%;" onclick="initAudio()">第一步：點擊啟用音效與系統</button>
+            <p style="font-size:12px; color:red; margin-top:5px;">*必須點擊後才能聽到 TNG 提醒聲</p>
+        </div>
+
+        <div id="mainControl" style="display:none;">
+            <div class="btn-group">
+                <button class="time-btn" onclick="setTime(30, this)">情境對話(30s)</button>
+                <button class="time-btn" onclick="setTime(60, this)">看圖講話(1m)</button>
+                <button class="time-btn" onclick="setTime(90, this)">文章朗讀(1.5m)</button>
+                <button class="time-btn" onclick="setTime(120, this)">口語表達(2m)</button>
+            </div>
+
+            <div id="timer">00:00</div>
+
+            <button id="recordBtn" onclick="startRecording()" disabled>準備開始</button>
+            <div id="status">請先選擇測驗項目</div>
+        </div>
+
+        <div class="footer-note">
+            提醒：結束後將自動下載音檔，請手動傳至 LINE 群組
+        </div>
     </div>
-    <div id="timer">00:00</div>
-    <button id="recordBtn" onclick="startRecording()" disabled>點擊<br>開始錄音</button>
-    <p id="status">請先選擇測驗項目</p>
 
     <script>
-        // 初始化音效系統 (使用內建音訊合成，不需外部檔案)
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
+        let audioCtx;
+        
+        function initAudio() {
+            audioCtx = new AudioContext();
+            document.getElementById('initOverlay').style.display = 'none';
+            document.getElementById('mainControl').style.display = 'block';
+        }
 
-        // 模擬 tng 聲的函式
         function beep(times) {
+            if (!audioCtx) return;
             let delay = 0;
             for(let i = 0; i < times; i++) {
                 setTimeout(() => {
@@ -42,14 +68,14 @@
                     oscillator.connect(gainNode);
                     gainNode.connect(audioCtx.destination);
                     oscillator.type = 'sine';
-                    oscillator.frequency.value = 850; // 接近測驗提示音的頻率
+                    oscillator.frequency.value = 900; 
                     gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.01);
+                    gainNode.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 0.01);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
                     oscillator.start(audioCtx.currentTime);
                     oscillator.stop(audioCtx.currentTime + 0.4);
                 }, delay);
-                delay += 400; // 兩聲之間的間隔
+                delay += 450;
             }
         }
 
@@ -60,8 +86,9 @@
             document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
             b.classList.add('active');
             document.getElementById('recordBtn').disabled = false;
+            document.getElementById('recordBtn').innerText = "開始錄音";
             updateDisplay(s);
-            document.getElementById('status').innerText = "已就緒，請點擊紅色按鈕開始";
+            document.getElementById('status').innerText = "已選定項目，點擊圓鈕開始錄音";
         }
 
         function updateDisplay(s) {
@@ -71,9 +98,7 @@
 
         async function startRecording() {
             try {
-                // 必須在點擊動作中啟動音效環境，解決手機靜音問題
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
@@ -82,33 +107,34 @@
                     const blob = new Blob(audioChunks, { type: 'audio/wav' });
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
-                    link.download = `口語測驗錄音_${new Date().getTime()}.wav`;
+                    link.download = `口語測驗_${new Date().getTime()}.wav`;
                     link.click();
-                    document.getElementById('status').innerText = "錄音結束，檔案已下載。";
+                    document.getElementById('status').innerText = "錄音已存，請檢查下載夾";
                 };
 
                 mediaRecorder.start();
                 let timeLeft = limitTime, elapsed = 0;
                 document.getElementById('recordBtn').disabled = true;
-                document.getElementById('status').innerText = "🔴 錄音進行中...";
+                document.getElementById('recordBtn').innerText = "正在錄音";
+                document.getElementById('status').innerText = "🔴 請開始作答...";
 
                 timerInterval = setInterval(() => {
                     elapsed++; timeLeft--; updateDisplay(timeLeft);
                     
-                    // 根據需求精準觸發提醒音
-                    if (limitTime === 30 && elapsed === 20) beep(1); // 30秒剩10秒時響一聲
-                    if (limitTime === 60 && elapsed === 50) beep(1); // 1分鐘剩10秒時響一聲
-                    if (limitTime === 90 && elapsed === 70) beep(2); // 1.5分鐘剩20秒時響兩聲
-                    if (limitTime === 120 && elapsed === 100) beep(2); // 2分鐘剩20秒時響兩聲
+                    if (limitTime === 30 && elapsed === 20) beep(1);
+                    if (limitTime === 60 && elapsed === 50) beep(1);
+                    if (limitTime === 90 && elapsed === 70) beep(2);
+                    if (limitTime === 120 && elapsed === 100) beep(2);
 
                     if (timeLeft <= 0) {
                         clearInterval(timerInterval);
                         mediaRecorder.stop();
                         document.getElementById('recordBtn').disabled = false;
+                        document.getElementById('recordBtn').innerText = "錄音完成";
                     }
                 }, 1000);
             } catch (err) {
-                alert("無法存取麥克風，請確認瀏覽器權限已開啟！");
+                alert("請授權麥克風存取！");
             }
         }
     </script>
