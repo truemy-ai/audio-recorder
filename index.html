@@ -5,23 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>口語測驗模擬錄音系統</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --danger: #e74c3c; --success: #27ae60; }
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .app-container { background: white; width: 90%; max-width: 500px; padding: 40px 30px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center; }
-        h1 { color: var(--primary); font-size: 24px; margin-bottom: 5px; }
-        .sub-title { color: #7f8c8d; font-size: 14px; margin-bottom: 30px; }
-        .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .btn-item { padding: 20px 10px; font-size: 16px; font-weight: bold; border: 2px solid #ecf0f1; background: #fff; color: var(--primary); border-radius: 20px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .btn-item span { font-size: 12px; color: #95a5a6; font-weight: normal; }
-        .btn-item:hover { border-color: var(--accent); color: var(--accent); }
-        .btn-item.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 8px 15px rgba(52, 152, 219, 0.3); }
+        :root { --primary: #2c3e50; --accent: #3498db; --danger: #e74c3c; --bg: #f4f7f6; }
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .app-container { background: white; width: 95%; max-width: 450px; padding: 30px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; border: 1px solid rgba(255,255,255,0.3); }
+        h1 { color: var(--primary); font-size: 22px; margin: 0 0 5px 0; letter-spacing: 1px; }
+        .sub-title { color: #7f8c8d; font-size: 13px; margin-bottom: 25px; }
+        .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .btn-item { padding: 18px 10px; font-size: 15px; font-weight: bold; border: 2px solid #f1f3f5; background: #fff; color: var(--primary); border-radius: 15px; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .btn-item span { font-size: 11px; color: #adb5bd; font-weight: normal; }
+        .btn-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .btn-item.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
         .btn-item.active span { color: rgba(255,255,255,0.8); }
-        .timer-display { font-size: 85px; font-weight: 900; font-family: 'Courier New', monospace; color: var(--primary); margin: 25px 0; letter-spacing: -2px; }
-        #recordBtn { width: 140px; height: 140px; border-radius: 50%; border: none; background: var(--danger); color: white; font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 25px rgba(231, 76, 60, 0.3); }
-        #recordBtn:disabled { background: #ecf0f1; color: #bdc3c7; box-shadow: none; cursor: not-allowed; }
+        .timer-display { font-size: 75px; font-weight: 900; font-family: 'Courier New', monospace; color: var(--primary); margin: 20px 0; letter-spacing: -2px; line-height: 1; }
+        #recordBtn { width: 130px; height: 130px; border-radius: 50%; border: none; background: var(--danger); color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4); margin-bottom: 15px; }
+        #recordBtn:disabled { background: #dee2e6; color: #adb5bd; box-shadow: none; cursor: not-allowed; }
         .recording-pulse { animation: pulse-red 1.5s infinite; }
-        @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(231, 76, 60, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
-        #status-msg { margin-top: 20px; font-size: 16px; color: var(--accent); font-weight: 500; min-height: 24px; }
+        @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
+        #status-msg { font-size: 15px; color: var(--accent); font-weight: 500; height: 20px; margin-bottom: 10px; }
+        .footer { font-size: 12px; color: #bdc3c7; border-top: 1px solid #f1f3f5; padding-top: 15px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -38,8 +39,10 @@
 
         <div class="timer-display" id="clock">00:00</div>
 
-        <button id="recordBtn" onclick="start()" disabled>請先選擇<br>測驗項目</button>
-        <div id="status-msg">請選擇上方項目以啟用系統</div>
+        <button id="recordBtn" onclick="start()" disabled>請選擇項目</button>
+        <div id="status-msg">選擇上方按鈕即可啟動</div>
+
+        <div class="footer">錄音結束將自動依類別命名並下載</div>
     </div>
 
     <script>
@@ -51,8 +54,9 @@
             limit = s; cat = name;
             document.querySelectorAll('.btn-item').forEach(b => b.classList.remove('active'));
             el.classList.add('active');
-            document.getElementById('recordBtn').disabled = false;
-            document.getElementById('recordBtn').innerHTML = "開始錄音";
+            const rb = document.getElementById('recordBtn');
+            rb.disabled = false;
+            rb.innerHTML = "點擊錄音";
             document.getElementById('status-msg').innerText = "系統已就緒，可開始錄音";
             updateClock(s);
         }
@@ -86,10 +90,11 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     const now = new Date();
-                    const timeStr = `${now.getMonth()+1}${now.getDate()}_${now.getHours()}${now.getMinutes()}`;
+                    const dateStr = `${now.getMonth()+1}${now.getDate()}`;
+                    const timeStr = `${now.getHours()}${now.getMinutes()}`;
                     a.href = url;
-                    // 自動命名格式：項目名稱_時間.wav
-                    a.download = `${cat}_${timeStr}.wav`;
+                    // 自動命名：例如 [情境對話]_102_2245.wav
+                    a.download = `[${cat}]_${dateStr}_${timeStr}.wav`;
                     a.click();
                 };
 
@@ -97,7 +102,7 @@
                 let left = limit, passed = 0;
                 const btn = document.getElementById('recordBtn');
                 btn.disabled = true; btn.classList.add('recording-pulse');
-                btn.innerText = "錄音中...";
+                btn.innerText = "正在錄音";
                 document.getElementById('status-msg').innerText = "🔴 正在錄製：" + cat;
 
                 timer = setInterval(() => {
@@ -111,10 +116,10 @@
                         clearInterval(timer); recorder.stop();
                         btn.disabled = false; btn.classList.remove('recording-pulse');
                         btn.innerText = "錄音完成";
-                        document.getElementById('status-msg').innerText = "✅ 檔案已存入下載資料夾";
+                        document.getElementById('status-msg').innerText = "✅ 檔案已存至下載資料夾";
                     }
                 }, 1000);
-            } catch (e) { alert("請授權麥克風權限！"); }
+            } catch (e) { alert("請確保已開啟麥克風權限！"); }
         }
     </script>
 </body>
