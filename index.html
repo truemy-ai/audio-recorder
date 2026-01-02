@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>限時錄音小助手</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
+        .btn-group { margin: 20px 0; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; border-radius: 5px; border: 1px solid #ccc; }
+        .time-btn.active { background: #007bff; color: white; border-color: #0056b3; }
+        #recordBtn { background: #ff4d4d; color: white; width: 100px; height: 100px; border-radius: 50%; border: none; font-weight: bold; }
+        #recordBtn:disabled { background: #ccc; }
+        #timer { font-size: 48px; color: #333; margin: 20px; }
+        #status { color: #666; }
+    </style>
+</head>
+<body>
+
+    <h2>限時錄音工具</h2>
+    <p>請選擇錄音長度：</p>
+    
+    <div class="btn-group">
+        <button class="time-btn" onclick="setTime(30, this)">30秒</button>
+        <button class="time-btn" onclick="setTime(60, this)">1分鐘</button>
+        <button class="time-btn" onclick="setTime(90, this)">1.5分鐘</button>
+        <button class="time-btn" onclick="setTime(120, this)">2分鐘</button>
+    </div>
+
+    <div id="timer">00:00</div>
+    <button id="recordBtn" onclick="startRecording()" disabled>點擊<br>開始</button>
+    <p id="status">請先選擇時間</p>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let limitTime = 0;
+        let timerInterval;
+
+        function setTime(seconds, btn) {
+            limitTime = seconds;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('recordBtn').disabled = false;
+            document.getElementById('status').innerText = `已設定為 ${seconds} 秒`;
+            updateDisplay(seconds);
+        }
+
+        function updateDisplay(s) {
+            let min = Math.floor(s / 60);
+            let sec = s % 60;
+            document.getElementById('timer').innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const link = document.createElement('a');
+                link.href = audioUrl;
+                link.download = `recording_${new Date().getTime()}.wav`;
+                link.click();
+                alert("時間到！錄音已自動儲存，請上傳至群組。");
+            };
+
+            mediaRecorder.start();
+            let timeLeft = limitTime;
+            document.getElementById('recordBtn').disabled = true;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    mediaRecorder.stop();
+                    document.getElementById('recordBtn').disabled = false;
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
