@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>口語測驗模擬系統</title>
+    <title>口語測驗模擬錄音</title>
     <style>
         :root { 
             --bg: #FFFFF0; /* 極淡黃色 */
-            --primary: #FFB100; /* 標題活力黃 */
-            --secondary: #2192FF; /* 選中藍 */
-            --danger: #FF4B91; /* 錄音紅 */
+            --primary: #FFB100; 
+            --secondary: #2192FF; 
+            --danger: #EF4444; 
             --text: #1F2937; 
         }
         
@@ -18,58 +18,62 @@
             background-color: var(--bg); 
             margin: 0; 
             display: flex; 
-            align-items: flex-start; /* 改為頂部對齊 */
+            align-items: flex-start; 
             justify-content: center; 
             height: 100vh; 
             overflow: hidden;
-            padding-top: 20px; /* 讓整體稍微往下移一點點，不貼頂 */
         }
 
         .container { 
-            width: 95%; 
-            max-width: 500px; 
-            height: 85vh; /* 縮小高度，讓下方留白更多 */
+            width: 92%; 
+            max-width: 480px; 
+            /* 調整高度與內距，讓內容更往上靠 */
+            margin-top: 15px;
             display: flex; 
             flex-direction: column; 
-            padding: 25px; 
+            padding: 15px 20px; 
             box-sizing: border-box; 
             background: white; 
-            border-radius: 40px; 
-            border: 6px solid var(--text); 
-            box-shadow: 0 15px 0px #D1D5DB; 
+            border-radius: 30px; 
+            border: 5px solid var(--text); 
+            box-shadow: 0 10px 0px #D1D5DB;
         }
         
         .header-box {
             background: var(--primary); 
-            padding: 15px; 
-            border-radius: 20px; 
-            border: 4px solid var(--text);
-            margin-bottom: 20px;
+            padding: 10px 5px; 
+            border-radius: 15px; 
+            border: 3px solid var(--text);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         h1 { 
-            font-size: 28px; 
+            /* 調小字體確保單行顯示 */
+            font-size: clamp(18px, 5.5vw, 24px); 
             color: var(--text); 
             margin: 0;
             text-align: center; 
-            letter-spacing: 1px;
+            white-space: nowrap; /* 強制不換行 */
         }
         
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
+            gap: 10px; 
         }
 
         .mode-btn { 
             background: #F3F4F6; 
-            border: 4px solid var(--text); 
-            border-radius: 20px; 
-            padding: 15px 5px; 
-            font-size: 22px; 
+            border: 3px solid var(--text); 
+            border-radius: 15px; 
+            padding: 12px 5px; 
+            font-size: 18px; 
             font-weight: 900; 
             cursor: pointer; 
-            box-shadow: 0 6px 0 var(--text); 
+            box-shadow: 0 5px 0 var(--text); 
             transition: 0.1s; 
             text-align: center;
         }
@@ -77,26 +81,27 @@
         .mode-btn.active { 
             background: var(--secondary); 
             color: white; 
-            transform: translateY(4px); 
+            transform: translateY(3px); 
             box-shadow: 0 2px 0 var(--text); 
         }
 
         .mode-btn span { 
-            font-size: 14px; 
+            font-size: 12px; 
             display: block; 
             font-weight: normal; 
-            margin-top: 3px; 
+            margin-top: 2px; 
         }
 
         .timer-box { 
             flex-grow: 1; 
             display: flex; 
             align-items: center; 
-            justify-content: center; 
+            justify-content: center;
+            min-height: 100px;
         }
 
         #clock { 
-            font-size: 120px; 
+            font-size: clamp(70px, 18vw, 100px); 
             font-weight: 900; 
             color: var(--text); 
             font-family: 'Arial', sans-serif; 
@@ -104,29 +109,33 @@
         }
 
         .action-area { 
-            padding-bottom: 10px; 
+            padding-bottom: 5px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
         }
 
         #recordBtn { 
-            width: 170px; 
-            height: 170px; 
+            /* 縮小按鈕尺寸防止觸底 */
+            width: 140px; 
+            height: 140px; 
             border-radius: 50%; 
-            border: 8px solid var(--text); 
+            border: 6px solid var(--text); 
             background: var(--danger); 
             color: white; 
-            font-size: 32px; 
+            font-size: 24px; 
             font-weight: 900; 
             cursor: pointer; 
-            box-shadow: 0 10px 0 #991B1B; 
+            box-shadow: 0 8px 0 #991B1B; 
             transition: 0.2s; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #recordBtn:disabled { 
             background: #D1D5DB; 
-            box-shadow: 0 6px 0 #9CA3AF; 
+            box-shadow: 0 5px 0 #9CA3AF; 
             opacity: 0.6; 
             cursor: not-allowed; 
         }
@@ -141,11 +150,11 @@
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
         #status { 
-            margin-top: 15px; 
-            font-size: 18px; 
+            margin-top: 10px; 
+            font-size: 16px; 
             color: var(--secondary); 
             font-weight: bold; 
-            height: 25px; 
+            height: 20px; 
         }
     </style>
 </head>
@@ -162,7 +171,9 @@
             <button class="mode-btn" onclick="prep(120, this, '口語表達')">口語表達<span>120s</span></button>
         </div>
 
-        <div class="timer-box"><div id="clock">00:00</div></div>
+        <div class="timer-box">
+            <div id="clock">00:00</div>
+        </div>
 
         <div class="action-area">
             <button id="recordBtn" onclick="run()" disabled>START</button>
@@ -211,7 +222,6 @@
                 timer = setInterval(() => {
                     passed++; left--; draw(left);
                     
-                    // 提示音功能暫留空位，等您提供音檔
                     if (left <= 0) {
                         clearInterval(timer); recorder.stop();
                         btn.disabled = false; btn.classList.remove('recording');
