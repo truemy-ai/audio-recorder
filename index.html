@@ -41,13 +41,14 @@
     </div>
 
     <script>
-        // 您的表單網址
         const FORM_URL = "https://forms.gle/xzAgzSnBBUC7jBFG6"; 
         let audioCtx, recorder, chunks = [], limit = 0, timer, cat = "";
         
         function makeBeep(times) {
+            // 每次發聲前嘗試恢復 Context，這是解決電腦端靜音的關鍵
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
             const now = audioCtx.currentTime;
             for (let i = 0; i < times; i++) {
                 const start = now + (i * 0.5);
@@ -63,8 +64,10 @@
         }
 
         function prep(s, btn, name) {
+            // 在使用者點擊題目時，立刻強制啟動音訊環境
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
+
             limit = s; cat = name;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
@@ -80,7 +83,9 @@
 
         async function run() {
             try {
+                // 錄音開始前再次檢查 Context
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 recorder = new MediaRecorder(stream);
                 chunks = [];
@@ -97,13 +102,16 @@
                         window.location.href = FORM_URL;
                     }, 1000);
                 };
+                
                 recorder.start();
                 let left = limit;
                 const btn = document.getElementById('recordBtn');
                 btn.disabled = true; btn.classList.add('recording');
                 document.getElementById('status').innerText = "🔴 正在錄音...";
+                
                 timer = setInterval(() => {
                     left--; draw(left);
+                    // 電腦端相容性觸發
                     if ((limit === 30 || limit === 60) && left === 10) makeBeep(1);
                     if ((limit === 90 || limit === 120) && left === 20) makeBeep(2);
                     if (left <= 0) {
