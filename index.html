@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>口語測驗模擬錄音</title>
+    <title>口語測驗錄音</title>
     <style>
         :root { --bg: #F0FFF0; --primary: #FFB100; --secondary: #2192FF; --danger: #EF4444; --text: #1F2937; }
         body { font-family: 'Microsoft JhengHei', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: flex-start; justify-content: center; height: 100vh; overflow: hidden; }
-        .container { width: 95%; max-width: 420px; margin-top: 10px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; background: white; border-radius: 25px; border: 5px solid var(--text); box-shadow: 0 8px 0px #D1D5DB; }
-        .header-box { background: var(--primary); padding: 8px 0; border-radius: 12px; border: 3px solid var(--text); margin-bottom: 12px; }
-        h1 { font-size: 20px; color: var(--text); margin: 0; text-align: center; white-space: nowrap; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .container { width: 95%; max-width: 400px; margin-top: 10px; display: flex; flex-direction: column; padding: 12px; box-sizing: border-box; background: white; border-radius: 20px; border: 5px solid var(--text); box-shadow: 0 8px 0px #D1D5DB; }
+        .header-box { background: var(--primary); padding: 8px 0; border-radius: 12px; border: 3px solid var(--text); margin-bottom: 10px; }
+        h1 { font-size: 19px; color: var(--text); margin: 0; text-align: center; white-space: nowrap; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 12px; padding: 10px 0; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 var(--text); transition: 0.1s; }
         .mode-btn.active { background: var(--secondary); color: white; transform: translateY(2px); box-shadow: 0 2px 0 var(--text); }
-        .mode-btn span { font-size: 12px; display: block; font-weight: normal; }
+        .mode-btn span { font-size: 11px; display: block; font-weight: normal; }
         .timer-box { flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 80px; }
         #clock { font-size: 90px; font-weight: 900; color: var(--text); font-family: 'Arial', sans-serif; }
         .action-area { display: flex; flex-direction: column; align-items: center; padding-bottom: 5px; }
-        #recordBtn { width: 130px; height: 130px; border-radius: 50%; border: 6px solid var(--text); background: var(--danger); color: white; font-size: 24px; font-weight: 900; cursor: pointer; box-shadow: 0 8px 0 #991B1B; transition: 0.2s; }
+        #recordBtn { width: 120px; height: 120px; border-radius: 50%; border: 6px solid var(--text); background: var(--danger); color: white; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 8px 0 #991B1B; transition: 0.1s; }
         #recordBtn:disabled { background: #D1D5DB; box-shadow: 0 4px 0 #9CA3AF; opacity: 0.6; }
         #recordBtn.recording { animation: pulse 1s infinite; background: #FF0000; box-shadow: none; border-color: #fff; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        #status { margin-top: 8px; font-size: 15px; color: var(--secondary); font-weight: bold; text-align: center; height: 20px; }
+        #status { margin-top: 5px; font-size: 15px; color: var(--secondary); font-weight: bold; text-align: center; height: 20px; }
     </style>
 </head>
 <body>
@@ -41,88 +41,5 @@
     </div>
 
     <script>
-        let audioCtx, recorder, chunks = [], limit = 0, timer, cat = "";
-
-        // 核心：直接生成物理「嗶」聲
-        function makeBeep(times) {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const now = audioCtx.currentTime;
-            
-            for (let i = 0; i < times; i++) {
-                const startTime = now + (i * 0.5); // 兩聲之間隔 0.5 秒
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                osc.type = 'sine'; // 正弦波
-                osc.frequency.setValueAtTime(800, startTime); // 800Hz 類似原音 TNG 頻率
-                
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(0.6, startTime + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(startTime);
-                osc.stop(startTime + 0.5);
-            }
-        }
-
-        function prep(s, btn, name) {
-            // 點擊即解鎖手機音訊環境
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            limit = s; cat = name;
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('recordBtn').disabled = false;
-            document.getElementById('status').innerText = "目標：" + name;
-            draw(s);
-        }
-
-        function draw(s) {
-            let m = Math.floor(s/60), sec = s%60;
-            document.getElementById('clock').innerText = `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
-        }
-
-        async function run() {
-            try {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                recorder = new MediaRecorder(stream);
-                chunks = [];
-                recorder.ondataavailable = e => chunks.push(e.data);
-                recorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'audio/wav' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    const rand = Math.floor(Math.random() * 9000) + 1000;
-                    a.download = `[${cat}]_${rand}.wav`;
-                    a.href = url; a.click();
-                };
-
-                recorder.start();
-                let left = limit;
-                const btn = document.getElementById('recordBtn');
-                btn.disabled = true; btn.classList.add('recording');
-                document.getElementById('status').innerText = "🔴 正在錄音...";
-
-                timer = setInterval(() => {
-                    left--; draw(left);
-                    
-                    // 根據要求觸發嗶聲
-                    if ((limit === 30 || limit === 60) && left === 10) makeBeep(1);
-                    if ((limit === 90 || limit === 120) && left === 20) makeBeep(2);
-
-                    if (left <= 0) {
-                        clearInterval(timer); recorder.stop();
-                        btn.disabled = false; btn.classList.remove('recording');
-                        btn.innerText = "完成";
-                    }
-                }, 1000);
-            } catch (e) { alert("請授權麥克風權限！"); }
-        }
-    </script>
-</body>
-</html>
+        // 內建兩段極簡音效數據 (確保絕對相容)
+        const sndB1 = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTdvT18AZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZHBmZ
