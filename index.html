@@ -5,85 +5,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>口語測驗模擬系統</title>
     <style>
-        :root { --bg: #FFFBEB; --primary: #FBBF24; --secondary: #3B82F6; --danger: #EF4444; --text: #1F2937; }
-        body { font-family: 'Arial Black', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        .container { width: 95%; max-width: 500px; height: 95%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: white; border-radius: 40px; border: 5px solid var(--text); box-shadow: 0 15px 0px #D1D5DB; }
-        h1 { font-size: 26px; color: var(--text); margin: 0 0 15px; text-align: center; background: var(--primary); padding: 10px; border-radius: 15px; border: 3px solid var(--text); }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .mode-btn { background: #F3F4F6; border: 3px solid var(--text); border-radius: 20px; padding: 15px 5px; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 var(--text); transition: 0.1s; text-align: center; }
-        .mode-btn.active { background: var(--secondary); color: white; transform: translateY(4px); box-shadow: 0 2px 0 var(--text); }
-        .mode-btn span { font-size: 13px; display: block; font-weight: normal; margin-top: 3px; }
-        .timer-box { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        #clock { font-size: 110px; font-weight: 900; color: var(--text); font-family: 'Arial', sans-serif; letter-spacing: -2px; }
-        .action-area { padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
-        #recordBtn { width: 170px; height: 170px; border-radius: 50%; border: 8px solid var(--text); background: var(--danger); color: white; font-size: 32px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 0 #991B1B; transition: 0.2s; }
-        #recordBtn:disabled { background: #D1D5DB; box-shadow: 0 6px 0 #9CA3AF; opacity: 0.6; cursor: not-allowed; }
-        #recordBtn.recording { animation: pulse 1s infinite; background: #FF0000; box-shadow: none; border-color: #fff; }
+        :root { 
+            --bg: #FFFFF0; /* 極淡黃色 */
+            --primary: #FFB100; /* 標題活力黃 */
+            --secondary: #2192FF; /* 選中藍 */
+            --danger: #FF4B91; /* 錄音紅 */
+            --text: #1F2937; 
+        }
+        
+        body { 
+            font-family: 'Arial Black', 'Microsoft JhengHei', sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            display: flex; 
+            align-items: flex-start; /* 改為頂部對齊 */
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden;
+            padding-top: 20px; /* 讓整體稍微往下移一點點，不貼頂 */
+        }
+
+        .container { 
+            width: 95%; 
+            max-width: 500px; 
+            height: 85vh; /* 縮小高度，讓下方留白更多 */
+            display: flex; 
+            flex-direction: column; 
+            padding: 25px; 
+            box-sizing: border-box; 
+            background: white; 
+            border-radius: 40px; 
+            border: 6px solid var(--text); 
+            box-shadow: 0 15px 0px #D1D5DB; 
+        }
+        
+        .header-box {
+            background: var(--primary); 
+            padding: 15px; 
+            border-radius: 20px; 
+            border: 4px solid var(--text);
+            margin-bottom: 20px;
+        }
+
+        h1 { 
+            font-size: 28px; 
+            color: var(--text); 
+            margin: 0;
+            text-align: center; 
+            letter-spacing: 1px;
+        }
+        
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+        }
+
+        .mode-btn { 
+            background: #F3F4F6; 
+            border: 4px solid var(--text); 
+            border-radius: 20px; 
+            padding: 15px 5px; 
+            font-size: 22px; 
+            font-weight: 900; 
+            cursor: pointer; 
+            box-shadow: 0 6px 0 var(--text); 
+            transition: 0.1s; 
+            text-align: center;
+        }
+
+        .mode-btn.active { 
+            background: var(--secondary); 
+            color: white; 
+            transform: translateY(4px); 
+            box-shadow: 0 2px 0 var(--text); 
+        }
+
+        .mode-btn span { 
+            font-size: 14px; 
+            display: block; 
+            font-weight: normal; 
+            margin-top: 3px; 
+        }
+
+        .timer-box { 
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        #clock { 
+            font-size: 120px; 
+            font-weight: 900; 
+            color: var(--text); 
+            font-family: 'Arial', sans-serif; 
+            letter-spacing: -2px; 
+        }
+
+        .action-area { 
+            padding-bottom: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        #recordBtn { 
+            width: 170px; 
+            height: 170px; 
+            border-radius: 50%; 
+            border: 8px solid var(--text); 
+            background: var(--danger); 
+            color: white; 
+            font-size: 32px; 
+            font-weight: 900; 
+            cursor: pointer; 
+            box-shadow: 0 10px 0 #991B1B; 
+            transition: 0.2s; 
+        }
+
+        #recordBtn:disabled { 
+            background: #D1D5DB; 
+            box-shadow: 0 6px 0 #9CA3AF; 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+        }
+
+        #recordBtn.recording { 
+            animation: pulse 1s infinite; 
+            background: #FF0000; 
+            box-shadow: none; 
+            border-color: #fff; 
+        }
+
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        #status { margin-top: 15px; font-size: 18px; color: var(--secondary); font-weight: bold; height: 25px; }
+
+        #status { 
+            margin-top: 15px; 
+            font-size: 18px; 
+            color: var(--secondary); 
+            font-weight: bold; 
+            height: 25px; 
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>測驗模擬錄音 🎤</h1>
+        <div class="header-box">
+            <h1>口語測驗模擬錄音 🎤</h1>
+        </div>
+        
         <div class="grid">
             <button class="mode-btn" onclick="prep(30, this, '情境對話')">情境對話<span>30s</span></button>
             <button class="mode-btn" onclick="prep(60, this, '看圖講話')">看圖講話<span>60s</span></button>
             <button class="mode-btn" onclick="prep(90, this, '文章朗讀')">文章朗讀<span>90s</span></button>
             <button class="mode-btn" onclick="prep(120, this, '口語表達')">口語表達<span>120s</span></button>
         </div>
+
         <div class="timer-box"><div id="clock">00:00</div></div>
+
         <div class="action-area">
             <button id="recordBtn" onclick="run()" disabled>START</button>
-            <div id="status">請選取測驗項目</div>
+            <div id="status">請先選取測驗項目</div>
         </div>
     </div>
 
-    <audio id="silentAudio" loop><source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==" type="audio/wav"></audio>
-
     <script>
-        let audioCtx, recorder, chunks = [], limit = 0, timer, cat = "";
-        const silent = document.getElementById('silentAudio');
+        let recorder, chunks = [], limit = 0, timer, cat = "";
 
-        // 手機版必須在點擊中初始化 AudioContext
         function prep(s, btn, name) {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // 嘗試播放靜音，佔領手機音軌
-            silent.play().catch(e => console.log("Silent play blocked"));
-
             limit = s; cat = name;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById('recordBtn').disabled = false;
             document.getElementById('status').innerText = "目標：" + name;
             draw(s);
-        }
-
-        // 強效發聲函式
-        function triggerTng(times) {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            
-            for (let i = 0; i < times; i++) {
-                const startTime = now + (i * 0.5);
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, startTime); 
-                
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(1, startTime + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(startTime);
-                osc.stop(startTime + 0.5);
-            }
         }
 
         function draw(s) {
@@ -93,16 +189,11 @@
 
         async function run() {
             try {
-                // 再次確保音軌開啟
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                silent.play(); 
-
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 recorder = new MediaRecorder(stream);
                 chunks = [];
                 recorder.ondataavailable = e => chunks.push(e.data);
                 recorder.onstop = () => {
-                    silent.pause(); // 錄音結束停止靜音佔用
                     const blob = new Blob(chunks, { type: 'audio/wav' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -114,22 +205,18 @@
                 recorder.start();
                 let left = limit, passed = 0;
                 const btn = document.getElementById('recordBtn');
-                btn.disabled = true; btn.classList.add('recording'); btn.innerText = "REC";
-                document.getElementById('status').innerText = "🔴 錄音進行中...";
+                btn.disabled = true; btn.classList.add('recording');
+                document.getElementById('status').innerText = "🔴 正在錄音...";
 
                 timer = setInterval(() => {
                     passed++; left--; draw(left);
                     
-                    if (limit === 30 && passed === 20) triggerTng(1);
-                    if (limit === 60 && passed === 50) triggerTng(1);
-                    if (limit === 90 && passed === 70) triggerTng(2);
-                    if (limit === 120 && passed === 100) triggerTng(2);
-
+                    // 提示音功能暫留空位，等您提供音檔
                     if (left <= 0) {
                         clearInterval(timer); recorder.stop();
                         btn.disabled = false; btn.classList.remove('recording');
                         btn.innerText = "完成";
-                        document.getElementById('status').innerText = "✅ 錄音已下載";
+                        document.getElementById('status').innerText = "✅ 錄音已儲存";
                     }
                 }, 1000);
             } catch (e) { alert("請授權麥克風權限！"); }
